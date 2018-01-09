@@ -1,6 +1,7 @@
 import random
 import tkinter as tk
-
+import time
+import _thread
 
 class Maze:
     finished = False
@@ -8,7 +9,7 @@ class Maze:
     map = ""
     mapWidth = 20
     mapHeight = 20
-    playerSymbol = u"\u263A"  # Smiley Face
+    playerSymbol = "\u263A"  # Smiley Face
 
     def make_maze(self):
         print(self.playerSymbol)
@@ -120,6 +121,11 @@ class gui:
     keywords = ["candyCanes", "mincePies", "christmasPudding", ]
 
     def __init__(self, m):
+        #Initial Timer Setup
+        self.time=False
+        self.running=False
+        self.startTime=time.time()
+        
         self.root = tk.Tk("Maze")
         self.root.title("Maze")
 
@@ -127,26 +133,45 @@ class gui:
         Maze = m
         self.root.resizable(False, False)
 
-        # Creates a frame
-        self.frame = tk.Frame(self.root, width=510, height=675)
+        #Creates a frame
+        self.frame = tk.Frame(self.root, width=510, height=690)
         self.root.resizable(False, False)
         self.frame.pack()
         self.frame.pack(fill="both", expand=True)
         self.frame.grid_propagate(False)
 
-        self.frame.grid_rowconfigure(0, weight=1)
+        self.frame.grid_rowconfigure(0, weight=0)
+        self.frame.grid_rowconfigure(1, weight=1)
         self.frame.grid_columnconfigure(0, weight=1)
 
+        #Binds controls
         self.root.bind("<Left>", self.left_key)
         self.root.bind("<Right>", self.right_key)
         self.root.bind("<Up>", self.up_key)
         self.root.bind("<Down>", self.down_key)
 
+        #Timer display and controls
+        self.timer=tk.Text(self.frame,height=1)
+        self.timer.grid(row=0,column=0)
+        self.timer.insert(1.0, "0")
+        self.timer.config(state="disabled")
+
+        self.startButton=tk.Button(self.frame,text="Start",command=self.start)
+        self.startButton.grid(row=0,column=1)
+
+        self.stopButton=tk.Button(self.frame,text="Stop",command=self.stop)
+        self.stopButton.grid(row=0,column=2)
+
+        self.resetButton=tk.Button(self.frame,text="Reset",command=self.reset)
+        self.resetButton.grid(row=0,column=3)
+
+        #Map Display
         self.editText = tk.Text(self.frame, borderwidth=3)
-        self.editText.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+        self.editText.grid(row=1, column=0,columnspan=4,sticky="nsew", padx=2, pady=2)
         self.editText.insert(1.0, Maze.printMap())
         self.editText.config(state="disabled")
 
+        #Tags
         self.editText.tag_configure("finish", foreground="red")
         self.editText.tag_configure("player", foreground="blue")
 
@@ -154,16 +179,46 @@ class gui:
         self.editText.tag_add("finish", endPos)
         playerPos = self.editText.search(Maze.playerSymbol, "1.0", stopindex="end")
         self.editText.tag_add("player", playerPos)
-        self.root.mainloop()
 
-    def click(self):
-        print("Button press")
+        self.start()#Starts timer
+        self.root.mainloop()#Shows display
+
+        
+        
+        
+
+    def timerFunc(self):
+        self.time=True 
+        while(self.time):
+            self.timer.config(state="normal")
+            self.timer.delete(1.0, "end")
+            self.timer.insert(1.0, str(time.time()-self.startTime))
+            self.timer.config(state="disabled")
+            time.sleep(0.1)
+        self.running=False
+    
+    def start(self):
+        if(not self.running):
+            _thread.start_new_thread(self.timerFunc,())
+    def stop(self):
+        self.time=False
+        
+    def reset(self):
+        self.startTime=time.time()
+        self.timer.config(state="normal")
+        self.timer.delete(1.0, "end")
+        self.timer.insert(1.0, "0.0")
+        self.timer.config(state="disabled")
 
     def right_key(self, event):
         Maze.moveCharacter(0, 1)
         self.editText.config(state="normal")
         self.editText.delete(1.0, "end")
-        self.editText.insert(1.0, Maze.printMap())
+        mapDisplay=Maze.printMap()
+        if(mapDisplay=="VICTORY!"):
+            self.stop()
+            mapDisplay+="\nCompleted in: "+str(self.timer.get("1.0",END))+" seconds"
+        self.editText.insert(1.0, mapDisplay)
         self.editText.config(state="disabled")
 
         endPos = self.editText.search("X", "1.0", stopindex="end")
@@ -175,7 +230,11 @@ class gui:
         Maze.moveCharacter(0, -1)
         self.editText.config(state="normal")
         self.editText.delete(1.0, "end")
-        self.editText.insert(1.0, Maze.printMap())
+        mapDisplay=Maze.printMap()
+        if(mapDisplay=="VICTORY!"):
+            self.stop()
+            mapDisplay+="\nCompleted in: "+str(time.time()-self.startTime)+" seconds"
+        self.editText.insert(1.0, mapDisplay)
         self.editText.config(state="disabled")
 
         endPos = self.editText.search("X", "1.0", stopindex="end")
@@ -187,7 +246,11 @@ class gui:
         Maze.moveCharacter(-1, 0)
         self.editText.config(state="normal")
         self.editText.delete(1.0, "end")
-        self.editText.insert(1.0, Maze.printMap())
+        mapDisplay=Maze.printMap()
+        if(mapDisplay=="VICTORY!"):
+            self.stop()
+            mapDisplay+="\nCompleted in: "+str(time.time()-self.startTime)+" seconds"
+        self.editText.insert(1.0, mapDisplay)
         self.editText.config(state="disabled")
 
         endPos = self.editText.search("X", "1.0", stopindex="end")
@@ -199,7 +262,11 @@ class gui:
         Maze.moveCharacter(1, 0)
         self.editText.config(state="normal")
         self.editText.delete(1.0, "end")
-        self.editText.insert(1.0, Maze.printMap())
+        mapDisplay=Maze.printMap()
+        if(mapDisplay=="VICTORY!"):
+            self.stop()
+            mapDisplay+="\nCompleted in: "+str(time.time()-self.startTime)+" seconds"
+        self.editText.insert(1.0, mapDisplay)
         self.editText.config(state="disabled")
 
         endPos = self.editText.search("X", "1.0", stopindex="end")
